@@ -1,6 +1,7 @@
 ; lsdpack - standalone LSDj (Little Sound Dj) recorder + player {{{
 ; Copyright (C) 2018  Johan Kotlinski
 ; https://www.littlesounddj.com
+; Modified 2026 (M64GitHub fork): ported to RGBDS 1.0.
 ;
 ; This program is free software; you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -16,8 +17,8 @@
 ; with this program; if not, write to the Free Software Foundation, Inc.,
 ; 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA. }}}
 
-if __RGBDS_MAJOR__ != 0 || __RGBDS_MINOR__ != 5 || __RGBDS_PATCH__ != 1
-    warn "Unknown RGBDS version {__RGBDS_VERSION__}! lsdpack was tested with RGBDS 0.5.1"
+if __RGBDS_MAJOR__ != 1
+    warn "Unknown RGBDS version {__RGBDS_VERSION__}! this lsdpack copy was ported to RGBDS 1.0"
 endc
 
 ; An example for how to call the player. Displays CPU usage
@@ -35,15 +36,15 @@ SECTION "boot",ROM0[$100]
 SECTION "setup",ROM0[$150]
     ; setup joypad reading
     ld  a,$10
-    ldh [0],a
+    ldh [$FF00],a
 
     ; setup timer
     ld  a,256-183
-    ldh [6],a   ; TMA
+    ldh [$FF06],a   ; TMA
     ld  a,6
-    ldh [7],a   ; TAC
+    ldh [$FF07],a   ; TAC
     ld  a,4
-    ldh [$ff],a ; IE
+    ldh [$FFFF],a ; IE
 
     ; play song 0
     xor a
@@ -54,7 +55,7 @@ SECTION "setup",ROM0[$150]
 mainloop:
 
 .wait_button_pressed:
-    ldh a,[0]
+    ldh a,[$FF00]
     and $f
     cp  $f
     jr  z,.wait_button_pressed
@@ -75,7 +76,7 @@ mainloop:
     call    .delay
 
 .wait_button_released
-    ldh a,[0]
+    ldh a,[$FF00]
     and $f
     cp  $f
     jr  nz,.wait_button_released
@@ -95,12 +96,12 @@ tim_handler:
     push    af
 
     ld  a,$ff   ; black background
-    ldh [$47],a
+    ldh [$FF47],a
 
     call LsdjTick
 
     xor a   ; white background
-    ldh [$47],a
+    ldh [$FF47],a
 
     pop af
     reti
