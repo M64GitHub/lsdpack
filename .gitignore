@@ -10,3 +10,4 @@ lsdpack.exe
 *.o
 music.s
 tags
+build/
