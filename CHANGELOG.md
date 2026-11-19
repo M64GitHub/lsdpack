@@ -6,9 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- `-t`: mark player ticks on the timer interrupt. Needed for LSDj 9.x, which runs its sound
+  engine from the timer instead of the LCD interrupt (use together with `-d`). (M64GitHub fork)
+- `-l SECONDS`: stop recording each song after SECONDS, for songs without HFF. (M64GitHub fork)
 - Check that a song started playing.
 
+### Changed
+- player.s and boot.s use RGBDS 1.0 syntax. (M64GitHub fork)
+
 ### Fixed
+- Build with CMake 4 (minimum version 3.5). (M64GitHub fork)
 - Support very slow key settings.
 - Register dump (-r) crash due to uninitialized memory.
 - Broken PU2 pitch optimization.
