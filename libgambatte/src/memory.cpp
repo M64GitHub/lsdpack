@@ -16,12 +16,20 @@
 //   51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
+// Modified 2026 (M64GitHub lsdpack fork): the player-tick hook fires on the
+// interrupt vector in g_tick_irq_address (LCD STAT or timer) instead of
+// always LCD STAT.
+
 #include "memory.h"
 #include "inputgetter.h"
 #include "savestate.h"
 #include "sound.h"
 #include "video.h"
 #include <cstring>
+
+// Interrupt vector that marks one player tick: 0x48 (LCD STAT, LSDj < 9.x)
+// or 0x50 (timer, LSDj 9.x; lsdpack -t). Defined in lsdpack.cpp.
+extern unsigned g_tick_irq_address;
 
 namespace gambatte {
 
@@ -295,7 +303,7 @@ unsigned long Memory::event(unsigned long cc) {
 				address = 0x50 + n;
 
 			intreq_.ackIrq(n);
-            if (address == 0x48) {
+            if (address == g_tick_irq_address) {
                 lcdHandler_();
             }
 			cc = interrupter_.interrupt(address, cc, *this);

@@ -1,6 +1,8 @@
 /* lsdpack - standalone LSDj (Little Sound Dj) recorder + player {{{
    Copyright (C) 2018  Johan Kotlinski
    https://www.littlesounddj.com
+   Modified 2026 (M64GitHub fork): -t ticks on the timer interrupt for
+   LSDj 9.x, -l cuts songs that never stop.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,6 +34,16 @@ Input input;
 std::string out_path;
 
 IWriter* writer;
+
+// Interrupt that marks one player tick (read by libgambatte/src/memory.cpp).
+// LSDj < 9.x runs its sound engine from LCD STAT (0x48); LSDj 9.x uses the
+// timer (0x50), selected with -t.
+unsigned g_tick_irq_address = 0x48;
+
+// -l: stop recording a song after this many seconds (0 = wait for HFF).
+int max_seconds = 0;
+// Set once a song was cut by -l, so LSDj's writes after the cut are ignored.
+bool cut = false;
 
 void run_one_frame() {
     size_t samples = 35112;
@@ -93,6 +105,7 @@ bool sound_enabled;
 void play_song() {
     int seconds_elapsed = 0;
     sound_enabled = false;
+    cut = false;
     writer->record_song_start(out_path.c_str());
     press(START);
     if (!sound_enabled) {
@@ -102,7 +115,16 @@ void play_song() {
     while (sound_enabled) {
         wait(1);
 
-        if (++seconds_elapsed == 60 * 60) {
+        if (max_seconds && ++seconds_elapsed >= max_seconds) {
+            printf("Cut after %i s (-l)\n", seconds_elapsed);
+            writer->record_song_stop();
+            sound_enabled = false;
+            cut = true;
+            press(START); // stop LSDj
+            press(0, 1);
+            break;
+        }
+        if (!max_seconds && ++seconds_elapsed == 60 * 60) {
             fputs("Aborted: Song still playing after one hour. Please add a HFF command to song end to stop recording.\n", stderr);
             exit(1);
         }
@@ -112,6 +134,9 @@ void play_song() {
 void on_ff_write(char p, char data, unsigned long cycle) {
     if (p < 0x10 || p >= 0x40) {
         return; // not sound
+    }
+    if (cut) {
+        return; // song was cut by -l; ignore LSDj stopping/continuing
     }
     switch (p) {
         case 0x26:
@@ -228,11 +253,13 @@ void record_dump(int argc, char* argv[], bool dmg_mode) {
 }
 
 void print_help_and_exit() {
-    puts("usage: lsdpack [-g] [-r] [-d] [lsdj.gb lsdj2.gb ...]");
+    puts("usage: lsdpack [-g] [-r] [-d] [-t] [-l seconds] [lsdj.gb lsdj2.gb ...]");
     puts("");
     puts("-g: .gbs conversion");
     puts("-r: raw register dump; optimizations disabled");
     puts("-d: record using emulated DMG (default: CGB)");
+    puts("-t: tick on timer interrupt (needed for LSDj 9.x; use with -d)");
+    puts("-l: stop recording each song after this many seconds (for songs without HFF)");
     exit(1);
 }
 
@@ -243,7 +270,7 @@ int main(int argc, char* argv[]) {
     unsigned flags = 0;
 
     int c;
-    while ((c = getopt(argc, argv, "grd")) != -1) {
+    while ((c = getopt(argc, argv, "grdtl:")) != -1) {
         switch (c) {
             case 'g':
                 puts(".gbs mode enabled");
@@ -257,6 +284,17 @@ int main(int argc, char* argv[]) {
                 puts("recording using emulated DMG");
                 dmg_mode = true;
                 break;
+            case 't':
+                puts("ticking on timer interrupt (LSDj 9.x)");
+                g_tick_irq_address = 0x50;
+                break;
+            case 'l':
+                max_seconds = atoi(optarg);
+                if (max_seconds <= 0) {
+                    print_help_and_exit();
+                }
+                printf("cutting songs after %i s\n", max_seconds);
+                break;
             default:
                 print_help_and_exit();
         }
@@ -264,6 +302,10 @@ int main(int argc, char* argv[]) {
 
     if (argc <= optind) {
         print_help_and_exit();
+    }
+    if (g_tick_irq_address == 0x50 && !dmg_mode) {
+        fputs("warning: -t without -d: LSDj on CGB runs the timer at 720 Hz, "
+              "so the player (~360 Hz) will play at half speed\n", stderr);
     }
 
     gameboy.setInputGetter(&input);
