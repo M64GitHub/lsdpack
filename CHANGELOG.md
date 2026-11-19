@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Build with CMake 4 (minimum version 3.5). (M64GitHub fork)
+- Songs after the first lost register writes that repeated the previous song's last value
+  (e.g. a pulse sweep kick played without sweep): the optimizer now forgets register state
+  at each song start, since the player clears the sound registers between songs. (M64GitHub fork)
 - Support very slow key settings.
 - Register dump (-r) crash due to uninitialized memory.
 - Broken PU2 pitch optimization.

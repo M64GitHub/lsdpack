@@ -1,6 +1,7 @@
 /* lsdpack - standalone LSDj (Little Sound Dj) recorder + player {{{
    Copyright (C) 2018  Johan Kotlinski
    https://www.littlesounddj.com
+   Modified 2026 (M64GitHub fork): reset rule state at song starts and NR52 writes.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -97,6 +98,10 @@ void Writer::optimize_rule(Rule& rule) {
             window.pop_front();
         }
         if (window.size() == rule.window_size()) {
+            // New song or sound on/off: registers were cleared (see Rule::reset).
+            if (window.front() == FLAG_SONG_START || window.front() == (0x26 | FLAG_CMD)) {
+                rule.reset();
+            }
             rule.transform(window);
         }
     }

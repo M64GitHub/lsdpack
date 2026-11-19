@@ -1,6 +1,7 @@
 /* lsdpack - standalone LSDj (Little Sound Dj) recorder + player {{{
    Copyright (C) 2018  Johan Kotlinski
    https://www.littlesounddj.com
+   Modified 2026 (M64GitHub fork): reset().
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -53,4 +54,10 @@ class SampleRule : public Rule {
         size_t window_size() const override { return 44; }
 
         void transform(std::deque<unsigned int>& bytes) override;
+
+        // Forget the playing sample, not the sample library (shared by all songs).
+        void reset() override {
+            curr_sample_bank = curr_sample_address = -1;
+            pitch_lsb_state = pitch_msb_state = -1;
+        }
 };

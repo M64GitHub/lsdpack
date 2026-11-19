@@ -1,6 +1,7 @@
 /* lsdpack - standalone LSDj (Little Sound Dj) recorder + player {{{
    Copyright (C) 2018  Johan Kotlinski
    https://www.littlesounddj.com
+   Modified 2026 (M64GitHub fork): reset().
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,6 +26,8 @@ class RedundantWriteRule : public Rule {
         explicit RedundantWriteRule(unsigned int reg) : reg(reg), reg_state(-1) { }
 
         size_t window_size() const override { return 2; }
+
+        void reset() override { reg_state = -1; }
 
         void transform(std::deque<unsigned int>& bytes) override {
             if (bytes[0] != (reg | FLAG_CMD)) {

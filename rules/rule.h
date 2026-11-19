@@ -1,6 +1,7 @@
 /* lsdpack - standalone LSDj (Little Sound Dj) recorder + player {{{
    Copyright (C) 2018  Johan Kotlinski
    https://www.littlesounddj.com
+   Modified 2026 (M64GitHub fork): Rule::reset().
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -46,4 +47,9 @@ class Rule {
     public:
         virtual size_t window_size() const = 0;
         virtual void transform(std::deque<unsigned int>& bytes) = 0;
+        // Forget remembered register state. Called when a song starts or NR52
+        // is written: the player switches sound off between songs, which
+        // clears the sound registers, so a write that repeats the previous
+        // song's value is not redundant. (M64GitHub fork)
+        virtual void reset() {}
 };

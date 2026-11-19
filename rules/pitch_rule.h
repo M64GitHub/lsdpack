@@ -1,6 +1,7 @@
 /* lsdpack - standalone LSDj (Little Sound Dj) recorder + player {{{
    Copyright (C) 2018  Johan Kotlinski
    https://www.littlesounddj.com
+   Modified 2026 (M64GitHub fork): reset().
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,6 +20,11 @@
 #include "rule.h"
 
 class PitchRule : public Rule {
+    public:
+        void reset() override {
+            pu0_lsb_state = pu0_msb_state = pu1_lsb_state = pu1_msb_state = -1;
+        }
+
     private:
         unsigned int pu0_lsb_state;
         unsigned int pu0_msb_state;
